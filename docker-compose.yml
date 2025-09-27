@@ -13,7 +13,6 @@ volumes:
 services:
   n8n:
     image: n8nio/n8n:latest
-    # 生产建议固定小版本号，如 n8nio/n8n:1.72.1
     restart: unless-stopped
     environment:
       - TZ=${TZ}
@@ -27,11 +26,9 @@ services:
       - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - EXECUTIONS_MODE=${EXECUTIONS_MODE}
-      # Queue(Bull) 使用的 Redis 连接
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
-      # 可选：禁用遥测
       - N8N_DIAGNOSTICS_ENABLED=false
       - N8N_VERSION_NOTIFICATIONS_ENABLED=false
     depends_on:
@@ -40,6 +37,10 @@ services:
       - n8n_data:/home/node/.n8n
     networks:
       - stack
+    # 本机直连（仅回环），例如 http://127.0.0.1:5678
+    # 注意：若保持 N8N_SECURE_COOKIE=true，本机用 HTTP 登录会失败（见下方说明）
+    ports:
+      - "127.0.0.1:5678:5678"
 
   redis:
     image: redis:7-alpine
@@ -56,27 +57,29 @@ services:
       - redis_data:/data
     networks:
       - stack
-    # 不对外暴露端口，仅内网可见
-    # 其它容器用 redis:6379 + 密码连接
+    # 本机直连 redis-cli -h 127.0.0.1 -p 6379 -a $REDIS_PASSWORD
+    ports:
+      - "127.0.0.1:6379:6379"
 
   influxdb:
     image: influxdb:2.7
     restart: unless-stopped
     environment:
       - TZ=${TZ}
-      # 一次性初始化参数（容器首次启动时生效）
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USER}
       - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
       - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
       - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
       - DOCKER_INFLUXDB_INIT_RETENTION=${INFLUXDB_RETENTION}
-      # - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_INIT_ADMIN_TOKEN}  # 可选
+      # - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_INIT_ADMIN_TOKEN}
     volumes:
       - influxdb_data:/var/lib/influxdb2
     networks:
       - stack
-    # 不暴露宿主端口，仅内网 http://influxdb:8086
+    # 本机直连 Influx UI: http://127.0.0.1:8086
+    ports:
+      - "127.0.0.1:8086:8086"
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -89,4 +92,3 @@ services:
       - n8n
     networks:
       - stack
-    # 通过 Cloudflare 全权代理 n8n，无需在本机暴露端口
