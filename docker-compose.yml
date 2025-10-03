@@ -6,7 +6,7 @@ networks:
 volumes:
   n8n_data:
   redis_data:
-  influxdb_data:
+  mariadb_data:
 
 services:
   n8n:
@@ -29,8 +29,15 @@ services:
       - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
       - N8N_DIAGNOSTICS_ENABLED=false
       - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - DB_TYPE=mariadb
+      - DB_MYSQLDB_HOST=mariadb
+      - DB_MYSQLDB_PORT=3306
+      - DB_MYSQLDB_DATABASE=${MARIADB_DATABASE}
+      - DB_MYSQLDB_USER=${MARIADB_USER}
+      - DB_MYSQLDB_PASSWORD=${MARIADB_PASSWORD}
     depends_on:
       - redis
+      - mariadb
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
@@ -59,25 +66,22 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
 
-  influxdb:
-    image: influxdb:2.7
+  mariadb:
+    image: mariadb:11.4
     restart: unless-stopped
     environment:
       - TZ=${TZ}
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USER}
-      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
-      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
-      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
-      - DOCKER_INFLUXDB_INIT_RETENTION=${INFLUXDB_RETENTION}
-      # - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_INIT_ADMIN_TOKEN}
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MARIADB_DATABASE}
+      - MYSQL_USER=${MARIADB_USER}
+      - MYSQL_PASSWORD=${MARIADB_PASSWORD}
     volumes:
-      - influxdb_data:/var/lib/influxdb2
+      - mariadb_data:/var/lib/mysql
     networks:
       - stack
-    # 本机直连 Influx UI: http://127.0.0.1:8086
+    # 本机直连 MariaDB: mysql -h 127.0.0.1 -P 3306 -u ${MARIADB_USER} -p
     ports:
-      - "127.0.0.1:8086:8086"
+      - "127.0.0.1:3306:3306"
 
   cloudflared:
     image: cloudflare/cloudflared:latest
