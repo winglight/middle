@@ -39,10 +39,10 @@ services:
       - ./data/n8n:/home/node/.n8n
     networks:
       - stack
-    # 本机直连（仅回环），例如 http://127.0.0.1:5678
+    # 本机直连（仅回环），例如 http://0.0.0.0:5678
     # 注意：若保持 N8N_SECURE_COOKIE=true，本机用 HTTP 登录会失败（见下方说明）
     ports:
-      - "127.0.0.1:5678:5678"
+      - "0.0.0.0:5678:5678"
 
   redis:
     image: redis:7-alpine
@@ -60,9 +60,9 @@ services:
       - ./data/redis:/data
     networks:
       - stack
-    # 本机直连 redis-cli -h 127.0.0.1 -p 6379 -a $REDIS_PASSWORD
+    # 本机直连 redis-cli -h 0.0.0.0 -p 6379 -a $REDIS_PASSWORD
     ports:
-      - "127.0.0.1:6379:6379"
+      - "0.0.0.0:6379:6379"
     # 添加特权模式以允许修改系统参数
     privileged: true
 
@@ -79,9 +79,9 @@ services:
       - ./data/mariadb:/var/lib/mysql
     networks:
       - stack
-    # 本机直连 MariaDB: mysql -h 127.0.0.1 -P 3306 -u ${MARIADB_USER} -p
+    # 本机直连 MariaDB: mysql -h 0.0.0.0 -P 3306 -u ${MARIADB_USER} -p
     ports:
-      - "127.0.0.1:3306:3306"
+      - "0.0.0.0:3306:3306"
 
   cloudflared:
     image: cloudflare/cloudflared:latest
