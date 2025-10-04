@@ -48,7 +48,8 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     command: >
-      sh -c 'redis-server
+      sh -c 'echo 1 > /proc/sys/vm/overcommit_memory &&
+      redis-server
       --save 20 1
       --loglevel warning
       --requirepass "$$REDIS_PASSWORD"'
@@ -62,6 +63,8 @@ services:
     # 本机直连 redis-cli -h 127.0.0.1 -p 6379 -a $REDIS_PASSWORD
     ports:
       - "127.0.0.1:6379:6379"
+    # 添加特权模式以允许修改系统参数
+    privileged: true
 
   mariadb:
     image: mariadb:11.4
